@@ -9,7 +9,7 @@ import {
   Bot, 
   BarChart3, 
   Lightbulb, 
-  Settings,
+  User,
   Menu,
   X
 } from "lucide-react";
@@ -25,7 +25,7 @@ export const Navigation = () => {
     { href: "/ai-advisor", icon: Bot, label: "AI Advisor" },
     { href: "/analytics", icon: BarChart3, label: "Analytics" },
     { href: "/tips", icon: Lightbulb, label: "Tips" },
-    { href: "/settings", icon: Settings, label: "Settings" },
+    { href: "/profile", icon: User, label: "Profile" },
   ];
 
   const isActive = (path: string) => location.pathname === path;

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Settings, 
+  User, 
   Home, 
   Bell, 
   DollarSign, 
@@ -18,13 +19,20 @@ import {
   Shield,
   Download,
   Trash2,
-  User
+  LogOut,
+  Mail,
+  Phone
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const SettingsPage = () => {
+const ProfilePage = () => {
   const { toast } = useToast();
-  const [settings, setSettings] = useState({
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
     homeSize: "2000",
     occupants: "3",
     utility: "pg-e",
@@ -39,12 +47,50 @@ const SettingsPage = () => {
     dataRetention: "1year"
   });
 
-  const updateSetting = (key: string, value: any) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+  useEffect(() => {
+    // Load user data from localStorage
+    const storedEmail = localStorage.getItem('userEmail') || '';
+    const storedName = localStorage.getItem('userName') || '';
+    const storedPhone = localStorage.getItem('userPhone') || '';
+    const [firstName, lastName] = storedName.split(' ');
+    
+    setProfile(prev => ({
+      ...prev,
+      firstName: firstName || '',
+      lastName: lastName || '',
+      email: storedEmail,
+      phone: storedPhone
+    }));
+  }, []);
+
+  const updateProfile = (key: string, value: any) => {
+    setProfile(prev => ({ ...prev, [key]: value }));
+    
+    // Update localStorage for personal info
+    if (key === 'firstName' || key === 'lastName') {
+      localStorage.setItem('userName', `${key === 'firstName' ? value : profile.firstName} ${key === 'lastName' ? value : profile.lastName}`);
+    } else if (key === 'email') {
+      localStorage.setItem('userEmail', value);
+    } else if (key === 'phone') {
+      localStorage.setItem('userPhone', value);
+    }
+    
     toast({
-      title: "Settings Updated",
-      description: "Your preferences have been saved.",
+      title: "Profile Updated",
+      description: "Your information has been saved.",
     });
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userPhone');
+    toast({
+      title: "Logged Out",
+      description: "You've been successfully logged out.",
+    });
+    navigate('/login');
   };
 
   return (
@@ -54,11 +100,73 @@ const SettingsPage = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Settings
+              Profile
             </h1>
-            <p className="text-muted-foreground">Customize your energy monitoring experience</p>
+            <p className="text-muted-foreground">Manage your account and preferences</p>
           </div>
+          <Button variant="outline" onClick={handleLogout} className="gap-2">
+            <LogOut className="w-4 h-4" />
+            Sign Out
+          </Button>
         </div>
+
+        {/* Personal Information */}
+        <Card className="shadow-card-custom">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="w-5 h-5 text-primary" />
+              Personal Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name</Label>
+                <Input
+                  id="firstName"
+                  value={profile.firstName}
+                  onChange={(e) => updateProfile('firstName', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  value={profile.lastName}
+                  onChange={(e) => updateProfile('lastName', e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  id="email"
+                  type="email"
+                  className="pl-10"
+                  value={profile.email}
+                  onChange={(e) => updateProfile('email', e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  id="phone"
+                  type="tel"
+                  className="pl-10"
+                  value={profile.phone}
+                  onChange={(e) => updateProfile('phone', e.target.value)}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Home Configuration */}
         <Card className="shadow-card-custom">
@@ -74,13 +182,13 @@ const SettingsPage = () => {
                 <Label htmlFor="homeSize">Home Size (sq ft)</Label>
                 <Input
                   id="homeSize"
-                  value={settings.homeSize}
-                  onChange={(e) => updateSetting('homeSize', e.target.value)}
+                  value={profile.homeSize}
+                  onChange={(e) => updateProfile('homeSize', e.target.value)}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="occupants">Number of Occupants</Label>
-                <Select value={settings.occupants} onValueChange={(value) => updateSetting('occupants', value)}>
+                <Select value={profile.occupants} onValueChange={(value) => updateProfile('occupants', value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -97,7 +205,7 @@ const SettingsPage = () => {
             
             <div className="space-y-2">
               <Label htmlFor="utility">Utility Provider</Label>
-              <Select value={settings.utility} onValueChange={(value) => updateSetting('utility', value)}>
+              <Select value={profile.utility} onValueChange={(value) => updateProfile('utility', value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -128,8 +236,8 @@ const SettingsPage = () => {
                   id="rate"
                   type="number"
                   step="0.01"
-                  value={settings.rate}
-                  onChange={(e) => updateSetting('rate', e.target.value)}
+                  value={profile.rate}
+                  onChange={(e) => updateProfile('rate', e.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -138,8 +246,8 @@ const SettingsPage = () => {
                   id="peakRate"
                   type="number"
                   step="0.01"
-                  value={settings.peakRate}
-                  onChange={(e) => updateSetting('peakRate', e.target.value)}
+                  value={profile.peakRate}
+                  onChange={(e) => updateProfile('peakRate', e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">4 PM - 9 PM weekdays</p>
               </div>
@@ -149,8 +257,8 @@ const SettingsPage = () => {
                   id="offPeakRate"
                   type="number"
                   step="0.01"
-                  value={settings.offPeakRate}
-                  onChange={(e) => updateSetting('offPeakRate', e.target.value)}
+                  value={profile.offPeakRate}
+                  onChange={(e) => updateProfile('offPeakRate', e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">All other hours</p>
               </div>
@@ -173,8 +281,8 @@ const SettingsPage = () => {
                 <p className="text-sm text-muted-foreground">Receive real-time alerts and updates</p>
               </div>
               <Switch 
-                checked={settings.notifications}
-                onCheckedChange={(checked) => updateSetting('notifications', checked)}
+                checked={profile.notifications}
+                onCheckedChange={(checked) => updateProfile('notifications', checked)}
               />
             </div>
             
@@ -186,8 +294,8 @@ const SettingsPage = () => {
                 <p className="text-sm text-muted-foreground">Weekly and monthly usage summaries</p>
               </div>
               <Switch 
-                checked={settings.emailReports}
-                onCheckedChange={(checked) => updateSetting('emailReports', checked)}
+                checked={profile.emailReports}
+                onCheckedChange={(checked) => updateProfile('emailReports', checked)}
               />
             </div>
             
@@ -197,8 +305,8 @@ const SettingsPage = () => {
                 <p className="text-sm text-muted-foreground">Alert when approaching monthly budget</p>
               </div>
               <Switch 
-                checked={settings.budgetAlerts}
-                onCheckedChange={(checked) => updateSetting('budgetAlerts', checked)}
+                checked={profile.budgetAlerts}
+                onCheckedChange={(checked) => updateProfile('budgetAlerts', checked)}
               />
             </div>
             
@@ -208,8 +316,8 @@ const SettingsPage = () => {
                 <p className="text-sm text-muted-foreground">Notify during high-cost peak hours</p>
               </div>
               <Switch 
-                checked={settings.peakAlerts}
-                onCheckedChange={(checked) => updateSetting('peakAlerts', checked)}
+                checked={profile.peakAlerts}
+                onCheckedChange={(checked) => updateProfile('peakAlerts', checked)}
               />
             </div>
           </CardContent>
@@ -220,7 +328,7 @@ const SettingsPage = () => {
           <Card className="shadow-card-custom">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                {settings.darkMode ? <Moon className="w-5 h-5 text-primary" /> : <Sun className="w-5 h-5 text-primary" />}
+                {profile.darkMode ? <Moon className="w-5 h-5 text-primary" /> : <Sun className="w-5 h-5 text-primary" />}
                 Appearance
               </CardTitle>
             </CardHeader>
@@ -231,8 +339,8 @@ const SettingsPage = () => {
                   <p className="text-sm text-muted-foreground">Switch to dark theme</p>
                 </div>
                 <Switch 
-                  checked={settings.darkMode}
-                  onCheckedChange={(checked) => updateSetting('darkMode', checked)}
+                  checked={profile.darkMode}
+                  onCheckedChange={(checked) => updateProfile('darkMode', checked)}
                 />
               </div>
             </CardContent>
@@ -248,7 +356,7 @@ const SettingsPage = () => {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Data Retention</Label>
-                <Select value={settings.dataRetention} onValueChange={(value) => updateSetting('dataRetention', value)}>
+                <Select value={profile.dataRetention} onValueChange={(value) => updateProfile('dataRetention', value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -339,11 +447,11 @@ const SettingsPage = () => {
         {/* Save Button */}
         <div className="flex justify-end gap-4">
           <Button variant="outline">Reset to Defaults</Button>
-          <Button>Save All Settings</Button>
+          <Button>Save All Changes</Button>
         </div>
       </div>
     </div>
   );
 };
 
-export default SettingsPage;
+export default ProfilePage;

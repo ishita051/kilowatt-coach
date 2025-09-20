@@ -9,10 +9,28 @@ import BillPredictionPage from "./pages/BillPredictionPage";
 import AIAdvisorPage from "./pages/AIAdvisorPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import TipsPage from "./pages/TipsPage";
-import SettingsPage from "./pages/SettingsPage";
+import ProfilePage from "./pages/ProfilePage";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+// Protected Route Component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+  
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+  
+  return (
+    <>
+      <Navigation />
+      {children}
+    </>
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -20,14 +38,39 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Navigation />
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/bill-prediction" element={<BillPredictionPage />} />
-          <Route path="/ai-advisor" element={<AIAdvisorPage />} />
-          <Route path="/analytics" element={<AnalyticsPage />} />
-          <Route path="/tips" element={<TipsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/" element={
+            <ProtectedRoute>
+              <Index />
+            </ProtectedRoute>
+          } />
+          <Route path="/bill-prediction" element={
+            <ProtectedRoute>
+              <BillPredictionPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/ai-advisor" element={
+            <ProtectedRoute>
+              <AIAdvisorPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/analytics" element={
+            <ProtectedRoute>
+              <AnalyticsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/tips" element={
+            <ProtectedRoute>
+              <TipsPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
