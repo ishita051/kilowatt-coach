@@ -8,6 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Zap, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const SignupPage = () => {
   const [formData, setFormData] = useState({
     firstName: "",
@@ -47,19 +49,57 @@ const SignupPage = () => {
 
     setIsLoading(true);
     
-    // Mock signup - replace with actual API call later
-    setTimeout(() => {
-      localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('userEmail', formData.email);
-      localStorage.setItem('userName', `${formData.firstName} ${formData.lastName}`);
-      localStorage.setItem('userPhone', formData.phone);
+    try {
+      // Step 1: Create the account
+      const signupResponse = await fetch(`${API_BASE_URL}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password
+        })
+      });
+
+      const signupData = await signupResponse.json();
+      if (!signupResponse.ok) {
+        throw new Error(signupData.msg || 'Failed to create account.');
+      }
+
       toast({
         title: "Account Created!",
-        description: "Welcome to Energy Advisor. Let's get started!",
+        description: "Logging you in...",
       });
+      
+      // Step 2: Automatically log the user in
+      const loginResponse = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, password: formData.password })
+      });
+
+      const loginData = await loginResponse.json();
+      if (!loginResponse.ok) {
+        throw new Error(loginData.msg || 'Automatic login failed.');
+      }
+      
+      localStorage.setItem('accessToken', loginData.access_token);
+      localStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('userEmail', formData.email);
+      
       navigate('/');
+
+    } catch (error) {
+       toast({
+        title: "Signup Failed",
+        description: error instanceof Error ? error.message : "An unknown error occurred.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const updateField = (field: string, value: any) => {
@@ -78,7 +118,7 @@ const SignupPage = () => {
           <CardTitle className="text-2xl bg-gradient-primary bg-clip-text text-transparent">
             Create Account
           </CardTitle>
-          <p className="text-muted-foreground">Join Energy Advisor and start saving money</p>
+          <p className="text-muted-foreground">Join Kilowatt Coach and start saving money</p>
         </CardHeader>
         
         <CardContent>
@@ -86,114 +126,45 @@ const SignupPage = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name</Label>
-                <Input
-                  id="firstName"
-                  placeholder="John"
-                  value={formData.firstName}
-                  onChange={(e) => updateField('firstName', e.target.value)}
-                  required
-                />
+                <Input id="firstName" placeholder="John" value={formData.firstName} onChange={(e) => updateField('firstName', e.target.value)} required disabled={isLoading} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">Last Name</Label>
-                <Input
-                  id="lastName"
-                  placeholder="Doe"
-                  value={formData.lastName}
-                  onChange={(e) => updateField('lastName', e.target.value)}
-                  required
-                />
+                <Input id="lastName" placeholder="Doe" value={formData.lastName} onChange={(e) => updateField('lastName', e.target.value)} required disabled={isLoading} />
               </div>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="john@example.com"
-                value={formData.email}
-                onChange={(e) => updateField('email', e.target.value)}
-                required
-              />
+              <Input id="email" type="email" placeholder="john@example.com" value={formData.email} onChange={(e) => updateField('email', e.target.value)} required disabled={isLoading} />
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+1 (555) 123-4567"
-                value={formData.phone}
-                onChange={(e) => updateField('phone', e.target.value)}
-                required
-              />
+              <Input id="phone" type="tel" placeholder="+1 (555) 123-4567" value={formData.phone} onChange={(e) => updateField('phone', e.target.value)} required disabled={isLoading}/>
             </div>
-            
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Create a strong password"
-                  value={formData.password}
-                  onChange={(e) => updateField('password', e.target.value)}
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
+                <Input id="password" type={showPassword ? "text" : "password"} placeholder="Create a strong password" value={formData.password} onChange={(e) => updateField('password', e.target.value)} required disabled={isLoading} />
+                <Button type="button" variant="ghost" size="sm" className="absolute right-0 top-0 h-full px-3 hover:bg-transparent" onClick={() => setShowPassword(!showPassword)} disabled={isLoading}>
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </Button>
               </div>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>
               <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Confirm your password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => updateField('confirmPassword', e.target.value)}
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
+                <Input id="confirmPassword" type={showConfirmPassword ? "text" : "password"} placeholder="Confirm your password" value={formData.confirmPassword} onChange={(e) => updateField('confirmPassword', e.target.value)} required disabled={isLoading} />
+                <Button type="button" variant="ghost" size="sm" className="absolute right-0 top-0 h-full px-3 hover:bg-transparent" onClick={() => setShowConfirmPassword(!showConfirmPassword)} disabled={isLoading}>
                   {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </Button>
               </div>
             </div>
-
             <div className="flex items-center space-x-2">
-              <Checkbox
-                id="terms"
-                checked={formData.agreeTerms}
-                onCheckedChange={(checked) => updateField('agreeTerms', checked)}
-              />
+              <Checkbox id="terms" checked={formData.agreeTerms} onCheckedChange={(checked) => updateField('agreeTerms', checked)} disabled={isLoading}/>
               <Label htmlFor="terms" className="text-sm">
-                I agree to the{" "}
-                <Link to="/terms" className="text-primary hover:underline">
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link to="/privacy" className="text-primary hover:underline">
-                  Privacy Policy
-                </Link>
+                I agree to the <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link> and <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
               </Label>
             </div>
-
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Creating Account..." : "Create Account"}
             </Button>

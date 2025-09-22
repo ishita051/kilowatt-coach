@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Zap, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const LoginPage = () => {
   const [credentials, setCredentials] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -17,18 +19,41 @@ const LoginPage = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Mock login - replace with actual API call later
-    setTimeout(() => {
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.msg || 'Login failed');
+      }
+
+      // Store the token and user state
+      localStorage.setItem('accessToken', data.access_token);
       localStorage.setItem('isAuthenticated', 'true');
       localStorage.setItem('userEmail', credentials.email);
+
       toast({
         title: "Welcome back!",
         description: "You've been successfully logged in.",
       });
       navigate('/');
+    } catch (error) {
+      toast({
+        title: "Login Failed",
+        description: error instanceof Error ? error.message : "An unknown error occurred.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -57,6 +82,7 @@ const LoginPage = () => {
                 value={credentials.email}
                 onChange={(e) => setCredentials(prev => ({ ...prev, email: e.target.value }))}
                 required
+                disabled={isLoading}
               />
             </div>
             
@@ -70,6 +96,7 @@ const LoginPage = () => {
                   value={credentials.password}
                   onChange={(e) => setCredentials(prev => ({ ...prev, password: e.target.value }))}
                   required
+                  disabled={isLoading}
                 />
                 <Button
                   type="button"
@@ -77,6 +104,7 @@ const LoginPage = () => {
                   size="sm"
                   className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </Button>
